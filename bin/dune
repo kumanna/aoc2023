@@ -1,4 +1,9 @@
 (executable
- (public_name aoc_2023)
+ (public_name aoc_2023_day1)
  (name day1)
- (libraries aoc_2023 str))
+ (libraries str))
+
+(executable
+ (public_name aoc_2023_day2)
+ (name day2)
+ (libraries str))
