@@ -47,15 +47,23 @@ let is_valid_game rlist =
   |> List.fold_left (fun yn x -> yn && (x.red <= 12) && (x.green <= 13) && (x.blue <= 14)) true
 
 let () =
-  file
-  |> read_lines
+  let lines = read_lines file in
+  lines
   |> List.filter (fun x -> String.length x > 0)
   |> List.map parse_line
   |> List.filter (fun x -> match x with
       | (_, b) -> is_valid_game b)
   |> List.fold_left (fun s x -> match x with
       | (i, _) -> i + s) 0
-  |> string_of_int |> print_endline
-  (* |> List.iter (fun x -> *)
-  (*     match x with *)
-  (*     | (a, b) -> print_endline (string_of_int a); List.iter print_record b) *)
+  |> string_of_int |> print_endline;
+  lines
+  |> List.filter (fun x -> String.length x > 0)
+  |> List.map parse_line
+  |> List.map (fun x -> match x with
+      | (_, b) -> List.fold_left (fun acc x -> { red = max x.red acc.red;
+                                                 blue = max x.blue acc.blue;
+                                                 green = max x.green acc.green; })
+                    { red = 0; green = 0; blue = 0} b)
+  |> List.map (fun x -> x.red * x.blue * x.green)
+  |> List.fold_left (fun a x -> a + x) 0
+  |> string_of_int |> print_endline;
