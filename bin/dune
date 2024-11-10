@@ -1,18 +1,22 @@
 (executable
  (public_name aoc_2023_day1)
  (name day1)
+ (modules day1)
  (libraries str))
 
 (executable
  (public_name aoc_2023_day2)
  (name day2)
+ (modules day2)
  (libraries str))
 
 (executable
  (public_name aoc_2023_day3)
  (name day3)
+ (modules day3)
  (libraries str))
 
 (executable
  (public_name aoc_2023_day4)
- (name day4))
+ (name day4)
+ (modules day4))
