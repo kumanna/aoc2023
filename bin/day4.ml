@@ -7,7 +7,7 @@ let read_lines file =
 module IntSet = Set.Make(Int)
 
 type scratch_card = {
-  (* id : int; *)
+  id : int;
   winning_set : IntSet.t;
   my_set : IntSet.t;
 }
@@ -19,7 +19,7 @@ let line_to_scratch_card s =
                     |> List.map int_of_string
                     |> IntSet.of_list in
   {
-    (* id = String.sub s 5 3 |> String.trim |> int_of_string; *)
+    id = String.sub s 5 3 |> String.trim |> int_of_string;
     winning_set = String.sub s 10 30 |> to_intset;
     my_set = String.sub s 42 74 |> to_intset;
   }
@@ -34,6 +34,28 @@ let rec pow a = function
     let b = pow a (n / 2) in
     b * b * (if n mod 2 = 0 then 1 else a)
 
+let rec unfold_right f init =
+    match f init with
+    | None -> []
+    | Some (x, next) -> x :: unfold_right f next
+
+let range a n =
+    let irange x = if x > n then None else Some (x, x + 1) in
+    unfold_right irange a
+
+let count_cards cardinality_set =
+  let rec count_cards_helper count expanded_list =
+    match expanded_list with
+    | [] -> count
+    | a::rest -> let n_additional_cards = List.assoc a cardinality_set in
+      if n_additional_cards > 0 then
+        count_cards_helper (1 + count)
+          (List.concat [range (a + 1) (a + n_additional_cards);rest])
+      else
+        count_cards_helper (1 + count) rest
+  in
+  count_cards_helper 0 (range 1 192)
+
 let () =
   let lines = (read_lines file) in
   lines
@@ -45,3 +67,11 @@ let () =
   |> List.map (fun x -> pow 2 (x - 1))
   |> List.fold_left (fun x y -> x + y) 0
   |> string_of_int |> print_endline;
+  lines
+  |> List.filter (fun x -> String.length x > 1)
+  |> List.map line_to_scratch_card
+  |> List.map (fun x -> (x.id, (IntSet.inter x.winning_set x.my_set) |> IntSet.cardinal))
+  (* |> List.iter (fun (x, y) -> print_endline ((string_of_int x) ^ ", " ^ (string_of_int y))) *)
+  |> count_cards
+  |> string_of_int
+  |> print_endline
