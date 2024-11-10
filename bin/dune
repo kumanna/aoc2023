@@ -12,3 +12,7 @@
  (public_name aoc_2023_day3)
  (name day3)
  (libraries str))
+
+(executable
+ (public_name aoc_2023_day4)
+ (name day4))
