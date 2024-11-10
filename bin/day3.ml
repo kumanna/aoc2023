@@ -72,6 +72,14 @@ let get_valid_integers a number_set_list =
   number_set_list
   |> List.filter (fun (_, indices) -> check_for_character a (MyCoordSet.to_list indices))
 
+let check_for_asterisk a indices =
+  List.fold_left (fun running_truth (i, j) -> running_truth ||
+                                              (a.(i).(j) = '*')) false indices
+
+let get_asterisk_integers a number_set_list =
+  number_set_list
+  |> List.filter (fun (_, indices) -> check_for_asterisk a (MyCoordSet.to_list indices))
+
 let () =
   let a = Array.make_matrix 140 140 ' ' in
   let b = Array.make 140 "" in
@@ -87,4 +95,25 @@ let () =
   |> get_valid_integers a
   |> List.map (fun (x, _) -> x)
   |> List.fold_left (fun x y -> x + y) 0
-  |> string_of_int |> print_endline
+  |> string_of_int |> print_endline;
+  let h = Hashtbl.create 300 in
+  b
+  |> Array.to_list
+  |> List.mapi (fun i x -> break_string i 0 [] false x)
+  |> List.concat
+  |> get_asterisk_integers a
+  |> List.map (fun (x, y) -> (x, MyCoordSet.to_list y))
+  |> List.map (fun (x, y) -> List.map (fun z -> (z, x)) y)
+  |> List.concat
+  |> List.filter (fun ((i, j), _) -> a.(i).(j) = '*')
+  |> List.iter (fun (x, y) -> Hashtbl.add h x y);
+  let unique_keys = (Hashtbl.fold (fun k _ l -> k::l) h [] |> List.sort_uniq compare) in
+  unique_keys
+  (* |> List.iter (fun (x, y) -> print_endline ((string_of_int x) ^ ", " ^ (string_of_int y))) *)
+  |> List.map (fun x -> Hashtbl.find_all h x)
+  |> List.map (fun x ->
+      match x with
+      | [a; b] -> a * b
+      | _ -> 0)
+  |> List.fold_left (fun x y -> x + y) 0
+  |> string_of_int |> print_endline;
