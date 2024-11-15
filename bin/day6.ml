@@ -14,11 +14,24 @@ let times = [38; 94; 79; 70]
 
 let records = [241; 1549; 1074; 1091]
 
+let times2 = [38947970]
+
+let records2 = [241154910741091]
+
 let () =
   times
   |> List.map generate_pairs
   |> List.map (function x -> List.map pair_to_distance x)
   |> List.map2 (fun x y -> (x, y)) records
+  |> List.map (fun (x, y) -> List.filter (fun a -> a > x) y)
+  |> List.map List.length
+  |> List.fold_left (fun x y -> x * y) 1
+  |> string_of_int
+  |> print_endline;
+  times2
+  |> List.map generate_pairs
+  |> List.map (function x -> List.map pair_to_distance x)
+  |> List.map2 (fun x y -> (x, y)) records2
   |> List.map (fun (x, y) -> List.filter (fun a -> a > x) y)
   |> List.map List.length
   |> List.fold_left (fun x y -> x * y) 1
