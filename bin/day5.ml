@@ -299,9 +299,35 @@ let get_seed_location seed =
   |> assoc_lookup temperature_to_humidity_map
   |> assoc_lookup humidity_to_location_map
 
+let seed_ranges = [
+  (1132132257, 323430997);
+  (2043754183, 4501055);
+  (2539071613, 1059028389);
+  (1695770806, 60470169);
+  (2220296232, 251415938);
+  (1673679740, 6063698);
+  (962820135, 133182317);
+  (262615889, 327780505);
+  (3602765034, 194858721);
+  (2147281339, 37466509);
+]
+
 let () =
   seeds
   |> List.map get_seed_location
   |> List.fold_left (fun x y -> if (x < y) then x else y) 10000000000
   |> string_of_int
-  |> print_endline
+  |> print_endline;
+  seed_ranges
+  |> List.map (fun (x, y) ->
+      let r = ref 10000000000 in
+        print_endline (string_of_int x);
+      for i = 0 to y-1 do
+        let n = (get_seed_location (x + i)) in
+        r := if n < !r then n else !r
+      done;
+      !r
+    )
+  |> List.fold_left (fun x y -> if (x < y) then x else y) 10000000000
+  |> string_of_int
+  |> print_endline;
