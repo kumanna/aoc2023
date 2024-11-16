@@ -20,13 +20,26 @@ let find_next_number l =
   |> List.map List.hd
   |> List.fold_left (fun x y -> x + y) 0
 
+let find_prev_number l =
+  find_zero_diff l []
+  |> List.map List.hd
+  |> List.fold_left (fun x y -> -x + y) 0
+
 let () =
-  file
-  |> read_lines
+  let lines = file |> read_lines in
+  lines
   |> List.filter (fun x -> String.length x > 1)
   |> List.map (String.split_on_char ' ')
   |> List.map (fun x -> List.map int_of_string x)
   |> List.map find_next_number
+  |> List.fold_left (fun x y -> x + y) 0
+  |> string_of_int
+  |> print_endline;
+  lines
+  |> List.filter (fun x -> String.length x > 1)
+  |> List.map (String.split_on_char ' ')
+  |> List.map (fun x -> List.map int_of_string x)
+  |> List.map find_prev_number
   |> List.fold_left (fun x y -> x + y) 0
   |> string_of_int
   |> print_endline
