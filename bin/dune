@@ -41,3 +41,8 @@
  (public_name aoc_2023_day8)
  (name day8)
  (modules day8))
+
+(executable
+ (public_name aoc_2023_day9)
+ (name day9)
+ (modules day9))
