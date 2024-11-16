@@ -18,6 +18,7 @@ module CamelCard = struct
     | '4' -> 4
     | '3' -> 3
     | '2' -> 2
+    | 'X' -> 0
     | _ -> failwith "Invalid card!"
 
   let create_hand s =
@@ -28,8 +29,24 @@ module CamelCard = struct
     let card5 = String.get s 4 in
     let bid = (String.split_on_char ' ' s) |> List.rev |> List.hd |> int_of_string
     in
-    let hand_point = match List.sort compare [card1;card2;card3;card4;card5] with
+    let hand_point =
+      match List.sort compare [card1;card2;card3;card4;card5] with
       | [a;b;c;d;e] ->
+        if e = 'X' && d = 'X' && c = 'X' && b = 'X' then 7
+        else if e = 'X' && d = 'X' && c = 'X' then
+          if a = b then 7 else 6
+        else if e = 'X' && d = 'X' then
+          if a = b && b = c then 7
+          else if a = b || b = c then 6
+          else 4
+        else if e = 'X' then
+           if a = b && b = c && c = d then 7
+           else if a = b && b = c || b = c && c = d
+           then 6
+           else if a = b && c = d then 5
+           else if a = b || b = c || c = d then 4
+           else 2
+        else
         if a = b && b = c && c = d && d = e then 7
         else if (a = b && b = c && c = d) || (b = c && c = d && d = e) then 6
         else if (a = b && b = c && d = e) || (a = b && c = d && d = e) then 5
@@ -61,4 +78,14 @@ let () =
   |> List.mapi (fun x y -> (x+1) * CamelCard.(y.bid))
   |> List.fold_left (fun x y -> x + y) 0
   |> string_of_int
-  |> print_endline
+  |> print_endline;
+  file
+  |> read_lines
+  |> List.map (fun x -> Str.global_replace (Str.regexp "J") "X" x)
+  |> List.filter (fun x -> (String.length x > 1))
+  |> List.map CamelCard.create_hand
+  |> List.sort (fun x y -> compare CamelCard.(x.point_tuple) CamelCard.(y.point_tuple))
+  |> List.mapi (fun x y -> (x+1) * CamelCard.(y.bid))
+  |> List.fold_left (fun x y -> x + y) 0
+  |> string_of_int
+  |> print_endline;
