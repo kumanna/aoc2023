@@ -761,12 +761,37 @@ let rec execute_move begin_string move_sequence =
     else if a = 1 then execute_move r rest
     else failwith "Illegal move!"
 
+let execute_move_fixed begin_string =
+  execute_move begin_string move_list
+
 let () =
   let rec reach_zzz n begin_string =
-    let new_dest = (execute_move begin_string move_list) in
+    let new_dest = (execute_move_fixed begin_string) in
     if new_dest = "ZZZ" then (n + 1)
     else reach_zzz (n + 1) new_dest
   in reach_zzz 0 "AAA"
      |> (fun n -> n * (List.length move_list))
      |> string_of_int
-     |> print_endline
+     |> print_endline;
+  print_endline "LCM of the following:";
+  let start_cells =
+    move_dict
+    |> List.filter (fun (x, _) -> (String.get x 2) = 'A')
+    |> List.map (fun (x, _) -> x)
+  in
+  let h = Hashtbl.create 16 in
+  let rec reach_endz n begin_string =
+    let new_dest = try Hashtbl.find h begin_string
+      with Not_found ->
+        let y = execute_move_fixed begin_string in
+        Hashtbl.add h begin_string y;
+        y
+    in
+    if (String.get new_dest 2) = 'Z' then n + 1
+    else reach_endz (n + 1) new_dest
+  in
+  start_cells
+  |> List.map  (fun x -> reach_endz 0 x)
+  |> List.map (fun n -> n * (List.length move_list))
+  |> List.map string_of_int
+  |> List.iter print_endline;
