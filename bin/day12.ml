@@ -4,86 +4,69 @@ let read_lines file =
   let contents = In_channel.with_open_bin file In_channel.input_all in
   String.split_on_char '\n' contents
 
-let get_question_indices s =
-  let rec get_question_indices_helper s n indices =
-    if String.length s < 1 then indices
+(* Adapted from Peter Norvig's solution here: *)
+(* https://github.com/norvig/pytudes/blob/main/ipynb/Advent-2023.ipynb *)
+
+let possible_damage s =
+  let rec possible_damage_helper s n =
+    if (String.length s) = 0 then n
     else
-      let current_char = String.get s 0 in
-      let rest_str = String.sub s 1 ((String.length s) - 1) in
-      if current_char = '?' then
-        get_question_indices_helper rest_str (n + 1) (n::indices)
+      let a = String.get s 0 in
+      let rest = String.sub s 1 ((String.length s) - 1) in
+      if a = '#' || a = '?' then
+        possible_damage_helper rest (1 + n)
       else
-        get_question_indices_helper rest_str (n + 1) indices
+        possible_damage_helper rest n
   in
-  get_question_indices_helper s 0 [] |> List.rev
+  possible_damage_helper s 0
 
-let eh_hashtable = Hashtbl.create 16
-
-let extract_hash_strings s =
-  let rec extract_hash_strings_helper s previous_hash running_list =
-    if String.length s < 1 then running_list
+let rec n_arrangements s combination_tuple =
+  match combination_tuple with
+  | [] -> if String.contains s '#' then 0 else 1
+  | r::rest ->
+    if possible_damage s < (List.fold_left (fun x y -> x + y) 0 combination_tuple)
+    then 0
     else
-      let current_char = String.get s 0 in
-      let rest_str = String.sub s 1 ((String.length s) - 1) in
-      match running_list with
-      | [] -> if current_char = '#' then extract_hash_strings_helper rest_str true [1]
-        else extract_hash_strings_helper rest_str false []
-      | a::r ->
-        if current_char = '#' && previous_hash then
-          extract_hash_strings_helper rest_str true ((a + 1)::r)
-        else if current_char = '#' && not previous_hash then
-          extract_hash_strings_helper rest_str true (1::running_list)
-        else if current_char != '#' && previous_hash then
-          extract_hash_strings_helper rest_str false running_list
-        else extract_hash_strings_helper rest_str false running_list
-  in
-  let retval =
-    try Hashtbl.find eh_hashtable s
-    with Not_found ->
-      (extract_hash_strings_helper s false []) |> List.rev
-  in
-  retval
+      let damaged =
+        if (possible_damage (String.sub s 0 r) != r) ||
+           ((String.length s) > r) && ((String.get s r) = '#') then 0
+        else
+        if String.length s > r then
+          n_arrangements (String.sub s (r + 1) ((String.length s) - (r + 1))) rest
+        else 1
+      in
+      let undamaged = if (String.get s 0) = '#' then 0 else
+          n_arrangements (String.sub s 1 ((String.length s) - 1)) combination_tuple
+      in
+      damaged + undamaged
 
+let arrangements_table = Hashtbl.create 16
 
-let cartesian_product l1 l2 =
-  l1 |> List.map (fun x -> (x, l2)) |> List.map (fun (x, y) -> (List.map (fun z -> List.concat [x; z]) y)) |> List.concat
-
-let cp_hashtable = Hashtbl.create 16
-
-let rec nth_cartesian_product n l =
-  let retval =
-    try Hashtbl.find cp_hashtable (n, l)
-    with Not_found ->
-      if n = 0 then []
-      else if n = 1 then
-        [["#"];["."]]
-      else if n = 2 then cartesian_product [["#"];["."]] l
-      else nth_cartesian_product (n - 1) (cartesian_product [["#"];["."]] l)
-  in
-  retval
-
-let q_hashtable = Hashtbl.create 16
-
-let rec build_unquestioned_string s fill_vals =
-  let retval =
-    try Hashtbl.find q_hashtable (s, fill_vals)
-    with Not_found ->
-    match String.index_opt s '?' with
-    | Some n -> build_unquestioned_string ((String.sub s 0 n) ^ (List.hd fill_vals) ^ (String.sub s (n + 1) ((String.length s) - n - 1))) (List.tl fill_vals)
-    | None -> s
-  in
-  retval
+let n_arrangements_cached s c =
+  match Hashtbl.find_opt arrangements_table (s, c) with
+  | Some x -> x
+  | None ->
+    let new_val = n_arrangements s c
+    in
+    Hashtbl.add arrangements_table (s, c) new_val;
+    new_val
 
 let () =
   let lines = read_lines file in
-  lines
-  |> List.filter (fun x -> String.length x > 0)
-  |> List.map (String.split_on_char ' ')
-  |> List.map (fun x -> (List.hd x, List.rev x |> List.hd |> String.split_on_char ',' |> List.map int_of_string))
-  |> List.mapi (fun i (x, y) -> print_endline ("N: " ^ (string_of_int i));
-      (nth_cartesian_product (1 + (get_question_indices x |> List.length)) [["#";"."]]
-       |> List.map (fun a -> build_unquestioned_string x a), y))
-  |> List.map (fun (x, y) -> (List.filter (fun a -> (extract_hash_strings a) = y) x) |> List.length)
+  let processed_lines =
+    lines
+    |> List.filter (fun x -> String.length x > 0)
+    |> List.map (String.split_on_char ' ')
+    |> List.map (fun x -> (List.hd x, List.rev x |> List.hd |> String.split_on_char ',' |> List.map int_of_string))
+  in
+  processed_lines
+  |> List.map (fun (x, y) -> n_arrangements_cached x y)
   |> List.fold_left (fun x y -> x + y) 0
   |> string_of_int
-  |> print_endline
+  |> print_endline;
+  processed_lines
+  |> List.map (fun (x, y) -> (x ^ "?" ^ x ^ "?" ^ x ^ "?" ^ x ^ "?" ^ x, List.concat [y;y;y;y;y]))
+  |> List.map (fun (x, y) -> print_endline (x); n_arrangements_cached x y)
+  |> List.fold_left (fun x y -> x + y) 0
+  |> string_of_int
+  |> print_endline;
