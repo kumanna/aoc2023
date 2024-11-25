@@ -18,4 +18,24 @@ let () =
   |> List.map chomp_string
   |> List.fold_left (fun x y -> x + y) 0
   |> string_of_int
-  |> print_endline
+  |> print_endline;
+  let boxes = Array.make 256 [] in
+  input
+  |> String.split_on_char ','
+  |> List.iter (fun x ->
+      if String.contains x '=' then
+        match (String.split_on_char '=' x) with
+        | [s1; s2] ->
+          (let boxnum = chomp_string s1 in
+           let new_focnum = int_of_string s2 in
+          match List.assoc_opt s1 boxes.(boxnum) with
+          | Some _ -> boxes.(boxnum) <- List.map (fun (label, focnum) -> if label = s1 then (s1, new_focnum) else (label, focnum)) boxes.(boxnum)
+          | _ -> boxes.(boxnum) <- List.concat [boxes.(boxnum);[(s1, new_focnum)]])
+        | _ -> failwith "ERROR"
+      else if String.contains x '-' then
+        let s1 = (String.sub x 0 ((String.length x) - 1)) in
+        let boxnum = chomp_string s1 in
+        match List.assoc_opt s1 boxes.(boxnum) with
+        | Some _ -> boxes.(boxnum) <- (List.remove_assoc s1 boxes.(boxnum))
+        | _ -> boxes.(boxnum) <- boxes.(boxnum));
+  Array.mapi (fun j x -> List.mapi (fun i (_, y) -> (j + 1) * (i + 1) * y) x) boxes |> Array.fold_left (fun x y -> y::x) [] |> List.concat |> List.fold_left (fun x y -> x + y) 0 |> string_of_int |> print_endline
