@@ -103,6 +103,9 @@ let the_array = [|
 
 let explode s = List.init (String.length s) (String.get s)
 
+let reverse_string s =
+  s |> explode |> List.rev |> List.fold_left (fun x y -> x ^ (Char.escaped y)) ""
+
 let transpose a =
   let l = String.length a.(0) in
   let at = Array.make l "" in
@@ -113,16 +116,42 @@ let transpose a =
   done;
   at
 
+let tilt_string s =
+  s
+  |> String.split_on_char '#'
+  |> List.map explode
+  |> List.map (fun x -> List.sort compare x)
+  |> List.map (fun y -> (List.filter (fun x -> x = 'O') y, List.length y))
+  |> List.map (fun (x, y) -> (List.length x, y))
+  |> List.map (fun (x, y) -> ((String.make x 'O') ^ (String.make (y - x) '.')))
+  |> String.concat "#"
+
+let cycle_array a =
+  a
+  |> transpose
+  |> Array.map tilt_string
+  |> transpose
+  |> Array.map tilt_string
+  |> transpose
+  |> Array.map reverse_string
+  |> Array.map tilt_string
+  |> Array.map reverse_string
+  |> transpose
+  |> Array.map reverse_string
+  |> Array.map tilt_string
+  |> Array.map reverse_string
+
 let () =
   let fs mystr =
-    String.split_on_char '#' mystr
-    |> List.map explode
-    |> List.map (fun x -> List.sort compare x)
-    |> List.map (fun y -> (List.filter (fun x -> x = 'O') y, List.length y))
-    |> List.map (fun (x, y) -> (List.length x, y))
-    |> List.map (fun (x, y) -> ((String.make x 'O') ^ (String.make (y - x) '.')))
-    |> String.concat "#"
+    mystr
+    |> tilt_string
     |> explode
     |> List.mapi (fun i x -> ((String.length mystr) - i, x))
     |> List.fold_left (fun x (a, b) -> if b = 'O' then x + a else x) 0 in
-  Array.map fs (transpose the_array) |> Array.fold_left (fun x y -> x + y) 0 |> string_of_int |> print_endline
+  Array.map fs (transpose the_array) |> Array.fold_left (fun x y -> x + y) 0 |> string_of_int |> print_endline;
+  let a = ref (Array.copy the_array) in
+  for i = 1 to 20000 do
+    a := (cycle_array (!a));
+    print_endline (string_of_int i);
+    Array.map fs (transpose !a) |> Array.fold_left (fun x y -> x + y) 0 |> string_of_int |> print_endline;
+  done;
