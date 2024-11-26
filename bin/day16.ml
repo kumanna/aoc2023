@@ -144,18 +144,35 @@ type beam =
     traversed_set : PointSet.t;
   }
 
+module BeamDirection = struct
+  type t = int * int * ray_direction
+
+  let compare (x1, y1, d1) (x2, y2, d2) =
+    let d2n = function
+      | Left -> 0
+      | Right -> 1
+      | Up -> 2
+      | Down -> 3
+    in
+    compare (x1, y1, d2n d1) (x2, y2, d2n d2)
+
+end
+
+module BeamSet = Set.Make(BeamDirection)
+
 let traverse_beam beam grid initial_point =
-  let seen_list = ref [] in
+  let seen_list = ref BeamSet.empty in
   let rec traverse_beam_helper beam grid new_point =
     let n_rows = Array.length grid in
     let n_cols = Array.length grid.(0) in
     let (new_rownum, new_colnum) = new_point in
     if new_rownum < 0 || new_rownum >= n_rows || new_colnum < 0 || new_colnum >= n_cols then
       beam.traversed_set
-    else if List.mem (new_point, beam.direction) !seen_list then
+    else if BeamSet.mem (new_rownum, new_colnum, beam.direction) !seen_list then
+    (* else if List.mem (new_point, beam.direction) !seen_list then *)
       beam.traversed_set
     else
-      (seen_list := (new_point, beam.direction)::!seen_list;
+      (seen_list := BeamSet.add (new_rownum, new_colnum, beam.direction) !seen_list;
        let beam = { beam with traversed_set = PointSet.add new_point beam.traversed_set } in
        match (beam.direction, grid.(new_rownum).(new_colnum)) with
        | (Left, '.') -> traverse_beam_helper beam grid (new_rownum, new_colnum - 1)
@@ -181,6 +198,33 @@ let traverse_beam beam grid initial_point =
        | _ -> failwith "wrong case!") in
   traverse_beam_helper beam grid initial_point
 
+let get_energized_number b g i =
+    traverse_beam b g i |> PointSet.cardinal
+
+let make_num_list n =
+  let rec make_num_list_helper n l =
+    if n < 1 then l else make_num_list_helper (n - 1) ((n - 1)::l)
+  in
+  make_num_list_helper n []
+
 let () =
-  traverse_beam { direction = Right ; traversed_set = PointSet.empty } grid (0, 0)
-  |> PointSet.cardinal |> string_of_int |> print_endline
+  get_energized_number { direction = Right ; traversed_set = PointSet.empty } grid (0, 0) |> string_of_int |> print_endline;
+  let n_cols = (Array.length grid.(0)) in
+  let n_rows = (Array.length grid) in
+  let top_list =
+    make_num_list n_cols
+    |> List.map (fun x -> get_energized_number { direction = Down ; traversed_set = PointSet.empty } grid (0, x)) in
+  let bottom_list =
+    make_num_list n_cols
+    |> List.map (fun x -> get_energized_number { direction = Up ; traversed_set = PointSet.empty } grid (n_rows - 1, x)) in
+  let left_list =
+    make_num_list n_rows
+    |> List.map (fun x -> get_energized_number { direction = Right ; traversed_set = PointSet.empty } grid (x, 0)) in
+  let right_list =
+    make_num_list n_rows
+    |> List.map (fun x -> get_energized_number { direction = Right ; traversed_set = PointSet.empty } grid (x, n_cols - 1)) in
+  [top_list;bottom_list;left_list;right_list]
+  |> List.concat
+  |> List.fold_left (fun x y -> max x y) 0
+  |> string_of_int
+  |> print_endline
