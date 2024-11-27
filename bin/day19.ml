@@ -842,6 +842,51 @@ let process_part part =
   in
   process_part_helper (Hashtbl.find operation_table "in") part
 
+let traverse_paths operation_table =
+  let rec traverse_paths_helper workflows min_range max_range running_list =
+    match workflows with
+    | [] -> failwith "No workflows!"
+    | current_workflow::rest ->
+       match current_workflow with
+       | (No_comparison, No_rating, "A") ->
+         (min_range, max_range)::running_list
+      | (No_comparison, No_rating, "R") -> running_list
+      | (Greater_than value, R_x, next_workflow) ->
+           let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) { min_range with x = max min_range.x (value + 1) } max_range [] in
+           let v2 = traverse_paths_helper rest min_range max_range [] in
+           List.concat [v1;v2;running_list]
+      | (Greater_than value, R_m, next_workflow) ->
+           let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) { min_range with m = max min_range.m (value + 1) } max_range [] in
+           let v2 = traverse_paths_helper rest min_range max_range [] in
+           List.concat [v1;v2;running_list]
+      | (Greater_than value, R_a, next_workflow) ->
+           let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) { min_range with a = max min_range.a (value + 1) } max_range [] in
+           let v2 = traverse_paths_helper rest min_range max_range [] in
+           List.concat [v1;v2;running_list]
+      | (Greater_than value, R_s, next_workflow) ->
+           let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) { min_range with s = max min_range.s (value + 1) } max_range [] in
+           let v2 = traverse_paths_helper rest min_range max_range [] in
+           List.concat [v1;v2;running_list]
+      | (Less_than value, R_x, next_workflow) ->
+           let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) min_range { max_range with x = min max_range.x (value - 1) } [] in
+           let v2 = traverse_paths_helper rest min_range max_range [] in
+           List.concat [v1;v2;running_list]
+      | (Less_than value, R_m, next_workflow) ->
+         let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) min_range { max_range with m = min max_range.m (value - 1) } [] in
+         let v2 = traverse_paths_helper rest min_range max_range [] in
+         List.concat [v1;v2;running_list]
+      | (Less_than value, R_a, next_workflow) ->
+         let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) min_range { max_range with a = min max_range.a (value - 1) } [] in
+         let v2 = traverse_paths_helper rest min_range max_range [] in
+         List.concat [v1;v2;running_list]
+      | (Less_than value, R_s, next_workflow) ->
+         let v1 = traverse_paths_helper (Hashtbl.find operation_table next_workflow) min_range { max_range with s = min max_range.s (value - 1) } [] in
+         let v2 = traverse_paths_helper rest min_range max_range [] in
+         List.concat [v1;v2;running_list]
+      | (No_comparison, _, next_workflow) -> traverse_paths_helper (Hashtbl.find operation_table next_workflow) min_range max_range []
+      | _ -> failwith "Incorrect workflow!" in
+  traverse_paths_helper (Hashtbl.find operation_table "in") { x = 1; m = 1; a = 1; s = 1 } { x = 4000; m = 4000; a = 4000; s = 4000} []
+
 let () =
   workflows
   |> List.map parse_workflow
@@ -860,4 +905,8 @@ let () =
   |> List.map process_part
   |> List.fold_left (fun y { x ; m ; a ; s } -> x + m + a + s + y) 0
   |> string_of_int
-  |> print_endline
+  |> print_endline;
+  operation_table
+  |> traverse_paths
+  |> List.map (fun ({ x = x1; m = m1; a = a1; s = s1}, { x = x2; m = m2; a = a2; s = s2 }) -> "(" ^ (string_of_int x1) ^ ", " ^ (string_of_int m1) ^ ", " ^ (string_of_int a1) ^ ", " ^ (string_of_int s1) ^ "), (" ^ (string_of_int x2) ^ ", " ^ (string_of_int m2) ^ ", " ^ (string_of_int a2) ^ ", " ^ (string_of_int s2) ^ ")")
+  |> List.iter print_endline
