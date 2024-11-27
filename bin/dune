@@ -76,3 +76,9 @@
  (public_name aoc_2023_day16)
  (name day16)
  (modules day16))
+
+(executable
+ (public_name aoc_2023_day19)
+ (name day19)
+ (modules day19)
+ (libraries str))
