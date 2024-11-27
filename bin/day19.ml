@@ -887,6 +887,13 @@ let traverse_paths operation_table =
       | _ -> failwith "Incorrect workflow!" in
   traverse_paths_helper (Hashtbl.find operation_table "in") { x = 1; m = 1; a = 1; s = 1 } { x = 4000; m = 4000; a = 4000; s = 4000} []
 
+let contains x s =
+  let (m, m_) = s in
+  x.x >= m.x && x.x <= m_.x &&
+  x.m >= m.m && x.m <= m_.m &&
+  x.a >= m.a && x.a <= m_.a &&
+  x.s >= m.s && x.s <= m_.s
+
 let () =
   workflows
   |> List.map parse_workflow
@@ -906,7 +913,19 @@ let () =
   |> List.fold_left (fun y { x ; m ; a ; s } -> x + m + a + s + y) 0
   |> string_of_int
   |> print_endline;
-  operation_table
-  |> traverse_paths
+  let valid_sets = operation_table |> traverse_paths in
+  valid_sets
   |> List.map (fun ({ x = x1; m = m1; a = a1; s = s1}, { x = x2; m = m2; a = a2; s = s2 }) -> "(" ^ (string_of_int x1) ^ ", " ^ (string_of_int m1) ^ ", " ^ (string_of_int a1) ^ ", " ^ (string_of_int s1) ^ "), (" ^ (string_of_int x2) ^ ", " ^ (string_of_int m2) ^ ", " ^ (string_of_int a2) ^ ", " ^ (string_of_int s2) ^ ")")
-  |> List.iter print_endline
+  |> List.iter print_endline;
+  let n = ref 0 in
+  for x = 1 to 4000 do
+    for m = 1 to 4000 do
+      for a = 1 to 4000 do
+        for s = 1 to 4000 do
+          if (valid_sets |> List.map (fun r -> contains { x; m; a; s } r) |> List.mem true) then
+            n := !n + 1
+        done
+      done
+    done
+  done;
+  print_endline (string_of_int !n);
