@@ -5,6 +5,13 @@
  (libraries str))
 
 (executable
+ (public_name aoc_2023_day2_2)
+ (name day2_2)
+ (modules day2_2)
+ (libraries str))
+
+
+(executable
  (public_name aoc_2023_day2)
  (name day2)
  (modules day2)
